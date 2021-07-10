@@ -1,0 +1,30 @@
+{
+    "name": "crawler",
+    "version": "1.0.0",
+    "description": "collect details of an IP address",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "eslint src/js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/stprakash/ipcrawler.git"
+    },
+    "keywords": [
+        "ip",
+        "crawler"
+    ],
+    "author": "TP",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/stprakash/ipcrawler/issues"
+    },
+    "homepage": "https://github.com/stprakash/ipcrawler#readme",
+    "dependencies": {
+        "express": "^4.17.1"
+    },
+    "devDependencies": {
+        "eslint": "^7.30.0"
+    }
+}
