@@ -28,7 +28,6 @@ var extractHeaders = (data, callback) => {
 module.exports = {
 
     crawl: function(url, callback) {
-        console.log("url:" + url);
 
         var crawler = new Crawler(url);
 
@@ -40,12 +39,12 @@ module.exports = {
         crawler.respectRobotsTxt = true;
 
         crawler.on("crawlstart", function() {
-            console.log("crawlstart");
+            //console.log("crawlstart");
         });
 
         crawler.on("fetchcomplete", function(queueItem, responseBuffer, response) {
-            console.log("I just received %s (%d bytes)", queueItem.url, responseBuffer.length);
-            console.log("It was a resource of type %s", response.headers['content-type']);
+            //console.log("I just received %s (%d bytes)", queueItem.url, responseBuffer.length);
+            //console.log("It was a resource of type %s", response.headers['content-type']);
 
             extractHeaders(response, function(data) {
                 callback(data);
@@ -65,13 +64,11 @@ module.exports = {
         });
 
         crawler.on("complete", function(queueItem, responseBuffer, response) {
-            console.log(queueItem);
-            console.log(responseBuffer);
-            console.log(response);
-            console.log("complete");
+            //console.log("complete");
         });
 
-        var originalEmit = crawler.emit;
+        // For Debugging Pupose
+        /*var originalEmit = crawler.emit;
         crawler.emit = function(evtName, queueItem) {
             crawler.queue.countItems({ fetched: true }, function(err, completeCount) {
                 if (err) {
@@ -93,7 +90,7 @@ module.exports = {
 
             console.log(evtName, queueItem ? queueItem.url ? queueItem.url : queueItem : null);
             originalEmit.apply(crawler, arguments);
-        };
+        };*/
 
         crawler.start();
     },

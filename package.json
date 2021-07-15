@@ -24,6 +24,7 @@
     "dependencies": {
         "express": "^4.17.1",
         "get-ssl-certificate": "^2.3.3",
+        "mongodb": "^4.0.0",
         "simplecrawler": "^1.1.9"
     },
     "devDependencies": {

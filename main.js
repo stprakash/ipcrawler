@@ -1,65 +1,120 @@
-//const express = require('express');
+const express = require('express');
 const crawler = require('./src/js/crawler');
 const DNSUtils = require('./src/js/dns-utils');
 var sslCertificate = require("get-ssl-certificate")
+var mongoUtil = require('./src/js/mongoUtil');
 
-//const app = express();
-//const port = 8000;
-
-let ip = "44.240.209.207";
-DNSUtils.reverseLookup(ip, function(err, domain, address, family) {
-    if (err == null) {
-        console.log("domain:" + domain);
-        console.log("address:" + address);
-
-        sslCertificate.get(domain).then(function(certificate) {
-            console.log(certificate)
-                // certificate is a JavaScript object
-
-            console.log(certificate.issuer)
-
-            console.log(certificate.subject)
-            console.log(certificate.subject.CN)
-            console.log(certificate.valid_from)
-            console.log(certificate.valid_to)
-
-            // var http = require('http');
-            // var options = { method: 'HEAD', host: domain, port: 80, path: '/' };
-            // var req = http.request(options, function(res) {
-            //     console.log(res.headers);
-            // });
-            // req.end();
-
-            crawler.crawl("https://" + certificate.subject.CN, function(data) {
-                console.log("response came")
-                console.log(data);
-                process.exit(1);
-            });
-
-        });
-
-
-
-
+mongoUtil.connectToServer(function(err, client) {
+    if (err) {
+        console.log(err);
+        process.exit(1);
+    } else {
+        start();
     }
-
 });
 
 
+function insertIntoDB(data) {
+    console.log("insertIntoDB called...");
+    try {
+        var db = mongoUtil.getDb();
+        const headers = db.collection('headers');
+
+        headers.find({ ip: data.ip }).toArray(function(err, results) {
+            if (err) throw err;
+
+            if (results.length == 0) {
+                headers.insertOne(data, function(err, res) {
+                    if (err) throw err;
+                    console.log(data.ip + " Inserted into DB");
+                });
+            } else {
+                headers.replaceOne({ ip: data.ip }, data, function(err, res) {
+                    if (err) throw err;
+                    console.log(data.ip + " Inserted into DB");
+                });
+            }
+        });
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function start() {
+
+    var ips = ["44.240.209.207"];
+
+    ips.forEach(ip => {
+
+        new Promise((resolve, reject) => {
+
+            let eachIp = {};
+            eachIp["ip"] = ip;
+
+            DNSUtils.reverseLookup(ip, function(err, domain, address, family) {
+                eachIp["domain"] = domain;
+
+                if (err == null) {
+                    sslCertificate.get(domain).then(function(certificate) {
+
+                        eachIp["certificate"] = certificate;
+
+                        // var http = require('http');
+                        // var options = { method: 'HEAD', host: domain, port: 80, path: '/' };
+                        // var req = http.request(options, function(res) {
+                        //     console.log(res.headers);
+                        // });
+                        // req.end();
+
+                        crawler.crawl("https://" + certificate.subject.CN, function(data) {
+                            eachIp["crawler"] = data;
+                            resolve(eachIp);
+                        });
+
+                    });
+                }
+            });
+        }).then(
+            function(value) {
+                insertIntoDB(value);
+            },
+            function(error) {
+                console.log(error);
+            }
+        );
+    });
+}
 
 
+/*
+const app = express();
+const port = 8000;
 
-// app.get('/', (req, res) => {
+app.get('/', (req, res) => {
+    res.send("Hello");
+});
 
-//     //let url = "https://saner.secpod.com/";
+app.listen(port, () => {
+    console.log(`Example app listening on port ${port}!`)
+});
+*/
 
+function gracefulShutdown() {
+    mongoUtil.close();
+}
 
-//     // crawler.crawl(url, function(data) {
-//     //     res.send("Hello" + data);
-//     // });
+function gracefulShutdownException() {
+    console.log("uncaughtException");
+    mongoUtil.close();
+}
 
-// });
+// This will handle process.exit():
+process.on('exit', gracefulShutdown);
 
-// app.listen(port, () => {
-//     console.log(`Example app listening on port ${port}!`)
-// });
+// This will handle kill commands, such as CTRL+C:
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGKILL', gracefulShutdown);
+
+// This will prevent dirty exit on code-fault crashes:
+process.on('uncaughtException', gracefulShutdownException);
